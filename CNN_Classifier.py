@@ -11,7 +11,7 @@ import numpy as np
 
 class CNNClassifier(nn.Module):
     """Класс нафикатора на базе свёрточной нейросети"""
-    def __init__(self, num_classes, lr):
+    def __init__(self, lr):
         """Инициализация модели"""
         super(CNNClassifier, self).__init__()
         self.conv1 = nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, stride=1, padding=1)
@@ -19,10 +19,12 @@ class CNNClassifier(nn.Module):
         self.conv3 = nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1)
         self.pool = nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
         self.fc1 = nn.Linear(128 * 16 * 16, 512)
-        self.fc2 = nn.Linear(512, num_classes)
+        self.fc2 = nn.Linear(512, 2)
         self.relu = nn.ReLU()
         self.dropout = nn.Dropout(p=0.5)
         self._class_names = list()
+        self._num_classes = 0
+        self._lr = lr
         self._optimizer = optim.Adam(self.parameters(), lr=lr)
         self._criterion = nn.CrossEntropyLoss()
 
@@ -47,6 +49,8 @@ class CNNClassifier(nn.Module):
             """
         print("Начало обучения модели")
         self._class_names = class_names
+        self._num_classes = len(class_names)
+        self.fc2 = nn.Linear(512, self._num_classes)
         self.train()  # Установить режим обучения
         for epoch in range(num_epochs):
             running_loss = 0.0
@@ -117,7 +121,7 @@ class CNNClassifier(nn.Module):
 
         # Визуализация матрицы ошибок
         plt.figure(figsize=(10, 8))
-        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=self.class_names, yticklabels=self.class_names)
+        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=self._class_names, yticklabels=self._class_names)
         plt.xlabel('Predicted')
         plt.ylabel('Actual')
         plt.title('Confusion Matrix')
@@ -165,7 +169,7 @@ class CNNClassifier(nn.Module):
             _, predicted = torch.max(output.data, 1)
 
         # Получаем предсказанный класс
-        predicted_class = self.class_names[predicted.item()]
+        predicted_class = self._class_names[predicted.item()]
 
         print(f"Предсказанный класс: {predicted_class}")
         return predicted_class
@@ -179,7 +183,7 @@ class CNNClassifier(nn.Module):
         try:
             torch.save(self.state_dict(), path_weights)
             with open(path_class_names, "w", encoding="UTF-8") as file:
-                json.dump(self.class_names, file)
+                json.dump(self._class_names, file)
             print("Веса модели успешно сохранены в файл ", path_weights)
         except Exception as err:
             print(err)
@@ -191,9 +195,15 @@ class CNNClassifier(nn.Module):
             path_class_names (str): путь к файлу с именами классов
             """
         try:
-            self.load_state_dict(torch.load(path_weights))
             with open(path_class_names, "r", encoding="UTF-8") as file:
-                self.class_names = json.load(file)
+                self._class_names = json.load(file)
+            self.fc2 = nn.Linear(512, len(self._class_names))
+            self._optimizer = optim.Adam(self.parameters(), lr=self._lr)
+            self.load_state_dict(torch.load(path_weights))
             print("Веса модели успешно загружены из файла ", path_weights)
         except Exception as err:
             print(err)
+
+    @property
+    def class_names(self):
+        return self._class_names

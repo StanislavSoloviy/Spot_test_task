@@ -7,18 +7,19 @@ import torch
 from GLOBAL import transform
 from KNN_sercher import extract_feature_and_find_similar, create_features
 from Preparing_Dataset import prepare_dataset
+from Settings import save_dataset_path, load_dataset_path
+from HYPERPARAMETERS import SETTINGS_PATH
 
 
 class WebApplication():
     """Класс приложения"""
 
-    def __init__(self, model_classifier, num_classes, model_weight_path, class_names_path, dataset_path,
+    def __init__(self, model_classifier, model_weight_path, class_names_path, dataset_path,
                  features_folder_path, epoches, valid_ratio, test_ratio, batch_size):
         self._HEIGHT = 600  # Параметр для CSS кастомизации
         self._WIDTH = 600  # Параметр для CSS кастомизации
         self._DELIMETER = 2.05  # Параметр для CSS кастомизации
         self._model_classifier = model_classifier  # модель CNN
-        self._num_classes = num_classes  # кол-во классов
         self._model_weight_path = model_weight_path  # путь до файла с весами модели классификатора
         self._class_names_path = class_names_path  # путь до файла с именами классов
         self._dataset_path = dataset_path  # путь до папки датасета
@@ -34,6 +35,8 @@ class WebApplication():
                 with gr.Column():
                     gr.Markdown('# Загрузите картинку и нажмите на кнопку "Начать"')
                     img = gr.Image(label="Загрузите картинку", height=self._HEIGHT, width=self._WIDTH)
+                    path = gr.Textbox(value=self._dataset_path, label="Путь до датасета")
+                    btn_save = gr.Button(value="Сохранить", interactive=False, elem_classes=["custom-button"])
                     btn = gr.Button(value="Начать", interactive=False, elem_classes=["custom-button"])
                 with gr.Column():
                     gr.Markdown('# Похожие изображения')
@@ -54,10 +57,13 @@ class WebApplication():
 
             output = [result1, result2, result3, result4]
             btn.click(self.upload_image, inputs=img, outputs=output)
+            btn_save.click(self.save_pass, inputs=path)
 
             img.upload(fn=self.set_interactive, inputs=img, outputs=btn)
             img.clear(fn=self.set_interactive, inputs=img, outputs=btn)
+            path.change(fn=self.set_interactive_by_textbox, inputs=path, outputs=btn_save)
 
+#
         """Страница 2, на которой обучаем модели"""
         with gr.Blocks() as page2:
             with gr.Row():
@@ -107,7 +113,7 @@ class WebApplication():
         return self.console_output.getvalue()
 
     def upload_image(self, input_img):
-        """Загрузка изображения"""
+        """Обработка изображения"""
         self._model_classifier.load(self._model_weight_path, self._class_names_path)
         image_class = self._model_classifier.predict_image(input_img)
         if image_class in self._model_classifier.class_names:
@@ -118,9 +124,18 @@ class WebApplication():
         else:
             return None
 
+    def save_pass(self, path):
+        """сохранить путь к датасету"""
+        save_dataset_path(path, SETTINGS_PATH)
+        self._dataset_path = path
+
     @staticmethod
     def set_interactive(img):
         return gr.update(interactive=img is not None)
+
+    @staticmethod
+    def set_interactive_by_textbox(s):
+        return gr.update(interactive=len(s)>2)
 
     def start_train_models(self, aug, aug_val, balance, path, epoches, create_feats):
         """Метод обучения модели. Принимаем данные с веб-клиента
@@ -133,6 +148,7 @@ class WebApplication():
             create_feats (bool): Создавать ли признаки для модели поиска изображений
         """
         self.start_console()
+        self._dataset_path = path
         # Создание датасета
         class_names, train_loader, valid_loader, test_loader = prepare_dataset(input_folder=path,
                                                                                augmentation=aug,
@@ -155,4 +171,5 @@ class WebApplication():
                                 transform=transform
                                 )
             print("Модель полностью готова к работе. Перейдите во вкладку <<Поиск изображения>> ")
+            save_dataset_path(self._dataset_path, SETTINGS_PATH)
         return None

@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "spot-test-task"
+version = "0.1.0"
+description = ""
+authors = ["StanislavSoloviy <solovijstanislav@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+gradio = "^4.43.0"
+torch = "^2.4.1"
+seaborn = "^0.13.2"
+scikit-learn = "^1.5.1"
+torchvision = "^0.19.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

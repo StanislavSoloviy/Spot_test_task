@@ -80,6 +80,8 @@ def create_features(input_folder: str, output_folder: str, transform):
         output_folder (str): Путь к папке с фичами"""
     print("Начало подготовки признаков изображений")
     folders = list()
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
     for root, dirs, files in os.walk(input_folder):
         # Определяем относительный путь к текущей папке относительно input_folder
         relative_path = os.path.relpath(root, input_folder)
@@ -139,7 +141,7 @@ def extract_feature_and_find_similar(new_image_path, input_class, dataset_path, 
     new_image_features = extract_features(new_image_path, transform)
     dataset_features = np.load(os.path.join(features_folder_path, f'{input_class}.npy'))
     similar_images_indices, similarity_scores = find_similar_images(new_image_features, dataset_features, k)
-
+    print(input_class, os.path.join(dataset_path, input_class))
     dataset = FolderDataset(os.path.join(dataset_path, input_class),  transform=transform)
     dataset_image_paths = [dataset.image_paths[i] for i in similar_images_indices]
     print(f"Индексы наиболее похожих изображений: {similar_images_indices}")

@@ -4,6 +4,8 @@ from PIL import Image
 import os
 import shutil
 
+from HYPERPARAMETERS import AUG_DATASET_PATH
+
 
 def create_and_split_dataset(dataset_path : str,
                              valid_ratio: float = 0.1,
@@ -37,6 +39,7 @@ def create_and_split_dataset(dataset_path : str,
     # Разделение датасета
     train_data, valid_data, test_data = random_split(dataset, [train_size, valid_size, test_size])
     class_names = train_data.dataset.classes  # Извлекаем названия классов
+    print("dataset_classes names ", class_names)
 
     # Создание DataLoader'ов
     train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
@@ -163,7 +166,7 @@ def prepare_dataset(input_folder: str,
         return None, None, None, None
     else:
         if augmentation:
-            dataset_path += "_aug"
+            dataset_path = AUG_DATASET_PATH
             augment_dataset(input_folder=input_folder,
                             output_folder=dataset_path,
                             balance=balance,
