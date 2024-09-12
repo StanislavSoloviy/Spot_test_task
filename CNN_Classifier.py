@@ -116,16 +116,16 @@ class CNNClassifier(nn.Module):
         print(f'Precision: {precision:.2f}')
         print(f'Recall: {recall:.2f}')
 
-        # Вычисляем матрицу ошибок
-        cm = confusion_matrix(all_labels, all_predictions)
-
-        # Визуализация матрицы ошибок
-        plt.figure(figsize=(10, 8))
-        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=self._class_names, yticklabels=self._class_names)
-        plt.xlabel('Predicted')
-        plt.ylabel('Actual')
-        plt.title('Confusion Matrix')
-        plt.show()
+        # # Вычисляем матрицу ошибок
+        # cm = confusion_matrix(all_labels, all_predictions)
+        #
+        # # Визуализация матрицы ошибок
+        # plt.figure(figsize=(10, 8))
+        # sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=self._class_names, yticklabels=self._class_names)
+        # plt.xlabel('Predicted')
+        # plt.ylabel('Actual')
+        # plt.title('Confusion Matrix')
+        # plt.show()
 
     def predict_image(self, image_path: str) -> str:
         """Функция для предсказания результатов модели

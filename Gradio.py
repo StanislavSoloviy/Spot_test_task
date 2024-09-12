@@ -28,6 +28,12 @@ class WebApplication():
         self._valid_ratio = valid_ratio  # процент валидации
         self._test_ratio = test_ratio  # процент тестирования
         self._batch_size = batch_size  # размер батча
+        page1 = self.create_page1()
+        page2 = self.create_page2()
+        self._app = gr.TabbedInterface([page1, page2], ["Поиск изображений", "Обучение модели"])
+        self._console_output = self.ConsoleOutput()
+
+    def create_page1(self):
         """Страница 1, на которой проискодит поиск изображений."""
         with gr.Blocks(
                 css=".custom-button { width: " + str(self._WIDTH) + "px; height: 50px; font-size: 16px; }") as page1:
@@ -62,8 +68,9 @@ class WebApplication():
             img.upload(fn=self.set_interactive, inputs=img, outputs=btn)
             img.clear(fn=self.set_interactive, inputs=img, outputs=btn)
             path.change(fn=self.set_interactive_by_textbox, inputs=path, outputs=btn_save)
+        return page1
 
-#
+    def create_page2(self):
         """Страница 2, на которой обучаем модели"""
         with gr.Blocks() as page2:
             with gr.Row():
@@ -81,13 +88,11 @@ class WebApplication():
             btn.click(self.start_train_models, inputs=[aug[0], aug_val, balance[0], path, epoches, create_feat[0]],
                       outputs=None)
             page2.load(self.update_console, outputs=output, every=0.5)
-
-        self.app = gr.TabbedInterface([page1, page2], ["Поиск изображений", "Обучение модели"])
-        self.console_output = self.ConsoleOutput()
+        return page2
 
     def launch(self):
         """Запуск приложения"""
-        self.app.launch()
+        self._app.launch()
 
     class ConsoleOutput(io.StringIO):
         """Класс для передачи текста из консоли"""
@@ -104,13 +109,13 @@ class WebApplication():
 
     def start_console(self):
         """Метод запуска консоли и обновления вывода"""
-        sys.stdout = self.console_output  # Перенаправляем stdout в наш буфер
+        sys.stdout = self._console_output  # Перенаправляем stdout в наш буфер
         # Возвращаем накопленный вывод
-        return self.console_output.getvalue()
+        return self._console_output.getvalue()
 
     def update_console(self):
         """Возвращает текущий накопленный вывод"""
-        return self.console_output.getvalue()
+        return self._console_output.getvalue()
 
     def upload_image(self, input_img):
         """Обработка изображения"""
@@ -131,11 +136,13 @@ class WebApplication():
 
     @staticmethod
     def set_interactive(img):
+        """staticmethod для разблокировки кнопки, если загружено изображение"""
         return gr.update(interactive=img is not None)
 
     @staticmethod
     def set_interactive_by_textbox(s):
-        return gr.update(interactive=len(s)>2)
+        """staticmethod для разблокировки кнопки, если введен текст в поле"""
+        return gr.update(interactive=len(s) > 2)
 
     def start_train_models(self, aug, aug_val, balance, path, epoches, create_feats):
         """Метод обучения модели. Принимаем данные с веб-клиента
@@ -163,6 +170,7 @@ class WebApplication():
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             self._model_classifier.to(device)
             self._model_classifier.train_me(train_loader, valid_loader, epoches, class_names)
+            self._model_classifier.test(test_loader)
             self._model_classifier.save(self._model_weight_path, self._class_names_path)
             # Создание признаков
             if create_feats:
