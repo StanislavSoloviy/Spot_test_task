@@ -7,11 +7,11 @@ import torch
 from GLOBAL import transform
 from KNN_sercher import extract_feature_and_find_similar, create_features
 from Preparing_Dataset import prepare_dataset
-from Settings import save_dataset_path, load_dataset_path
+from Settings import save_dataset_path
 from HYPERPARAMETERS import SETTINGS_PATH
 
 
-class WebApplication():
+class WebApplication:
     """Класс приложения"""
 
     def __init__(self, model_classifier, model_weight_path, class_names_path, dataset_path,
